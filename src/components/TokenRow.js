@@ -40,7 +40,7 @@ export const TokenRow = ({ tokens, index, reward }) => {
 
   const t0 = new Date(reward.deadline).getTime() - dt.toNumber();
 
-  const dtDays = Math.floor(dt / (1000 * 60 * 60 * 24));
+  const daysLeft = Date.now() < new Date(reward.deadline).getTime() ? (new Date(reward.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24) : 0;
 
   const left = Date.now() < new Date(reward.deadline).getTime() ? treasury.times((Date.now() - t0) / dt).minus(rewardAmount).div(tenInDecimals) : new BigNumber(-1)
   const leftLabel = left.lt(0) ? 'All collected' : left.gt(fullReward.minus(collected)) ? `${fullReward.minus(collected).toFixed(1)} ${tokenName}` : `${left.toFixed(1)} ${tokenName}`
@@ -57,7 +57,7 @@ export const TokenRow = ({ tokens, index, reward }) => {
         {leftLabel}
       </td>
       <td>
-        {dtDays} days
+        {daysLeft.toFixed(0)} days
         {/* ({new Date(reward.deadline).toDateString()}) */}
       </td>
       <td>
