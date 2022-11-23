@@ -62,7 +62,7 @@ export const TokenRow = ({ tokens, index, reward }) => {
       </td>
       <td>
         {(reward.receiver === pkh || reward.admin === pkh) && (<Button
-          disabled={!pkh || left.toFixed(1) === "0"}
+          disabled={!pkh || left.toFixed(1) === "0.0"}
           onClick={() => handleClaim(reward.id)}
         >
           {reward.admin === pkh ? 'Claim as Admin' : 'Claim'}
