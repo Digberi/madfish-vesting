@@ -4,9 +4,30 @@ import { getTokensMetadata } from "../utils/tokenMetadata.api";
 import { RefreshableButton } from "./RefreshableButton";
 import { useRewards } from "../hooks/useRewards";
 import { Table } from './Table';
+import { Button } from "./Button";
+import BigNumber from "bignumber.js";
+
+const tenIn18 = new BigNumber(10).pow(18);
+
+const checkIfClaimable = (reward) => {
+  const tenInDecimals = new BigNumber(10).pow(6)
+  const treasury = new BigNumber(reward.treasury)
+  const speed = new BigNumber(reward.distr_speed_f)
+  const rewardAmount = new BigNumber(reward.collected)
+
+
+  const dt = treasury.times(tenIn18.times(1000)).div(speed)
+
+  const t0 = new Date(reward.deadline).getTime() - dt.toNumber();
+
+
+  const left = Date.now() < new Date(reward.deadline).getTime() ? treasury.times((Date.now() - t0) / dt).minus(rewardAmount).div(tenInDecimals) : new BigNumber(-1);
+
+  return left.gt(0.1);
+}
 
 export const Explore = () => {
-  const { pkh } = useBeacon();
+  const { contract, pkh, Tezos } = useBeacon();
   const [tokens, setTokens] = useState([]);
   const { rewards, loadRewards } = useRewards();
 
@@ -44,11 +65,29 @@ export const Explore = () => {
     loadTokensMetadata();
   }, [loadTokensMetadata]);
 
+
+  const claimAll = useCallback(async () => {
+    if (!contract) return;
+
+    const userRewards = rewards.filter(x => x.receiver === pkh)
+
+    const batchOp = userRewards.filter(checkIfClaimable).reduce((acc, reward) => {
+      const claimParams = contract.methodsObject.claim(reward.id);
+      return acc.withContractCall(claimParams);
+    }, Tezos.wallet.batch())
+
+    await batchOp.send();
+
+  }, [Tezos.wallet, contract, pkh, rewards]);
+
   return (
     <section>
       <div className="search-bar"></div>
 
-      <h3 className='pad'>Your rewards:</h3>
+      <div className="your-rewards">
+        <h3 className='pad'>Your rewards:</h3>
+        <Button disabled={!pkh} onClick={claimAll}>Claim all</Button>
+      </div>
       <Table tokens={tokens} rewards={rewards.filter(x => x.receiver === pkh || x.admin === pkh)} />
       <h3 className='pad'>All rewards:</h3>
       <Table tokens={tokens} rewards={rewards.filter(x => x.receiver !== pkh)} />

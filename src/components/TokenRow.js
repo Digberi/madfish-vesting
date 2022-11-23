@@ -43,14 +43,14 @@ export const TokenRow = ({ tokens, index, reward }) => {
   const dtDays = Math.floor(dt / (1000 * 60 * 60 * 24));
 
   const left = Date.now() < new Date(reward.deadline).getTime() ? treasury.times((Date.now() - t0) / dt).minus(rewardAmount).div(tenInDecimals) : new BigNumber(-1)
-  const leftLabel = left.lt(0) ? 'All collected' : left.gt(fullReward.minus(collected)) ? `${fullReward.minus(collected).toFixed(0)} ${tokenName}` : `${left.toFixed(0)} ${tokenName}`
+  const leftLabel = left.lt(0) ? 'All collected' : left.gt(fullReward.minus(collected)) ? `${fullReward.minus(collected).toFixed(1)} ${tokenName}` : `${left.toFixed(1)} ${tokenName}`
   return (
     <tr>
       <td>
-        {fullReward.toFixed(0)} {tokenName}
+        {fullReward.toFixed(1)} {tokenName}
       </td>
       <td>
-        {collected.toFixed(0)} {tokenName}
+        {collected.toFixed(1)} {tokenName}
       </td>
       <td>
         {/* {left.toFixed()} */}
@@ -62,7 +62,7 @@ export const TokenRow = ({ tokens, index, reward }) => {
       </td>
       <td>
         {(reward.receiver === pkh || reward.admin === pkh) && (<Button
-          disabled={!pkh || left.toFixed(0) === "0"}
+          disabled={!pkh || left.toFixed(1) === "0"}
           onClick={() => handleClaim(reward.id)}
         >
           {reward.admin === pkh ? 'Claim as Admin' : 'Claim'}
