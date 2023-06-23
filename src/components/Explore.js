@@ -29,7 +29,7 @@ const checkIfClaimable = (reward) => {
 export const Explore = () => {
   const { contract, pkh, Tezos } = useBeacon();
   const [tokens, setTokens] = useState([]);
-  const { rewards, loadRewards } = useRewards();
+  const { rewards, loadingRewards, loadRewards } = useRewards();
 
   const loadTokensMetadata = useCallback(async () => {
     if (rewards.length === 0) {
@@ -37,15 +37,15 @@ export const Explore = () => {
     }
     console.log('loadTokensMetadata');
     let newTokens = [];
-    for (var i = 0; i < rewards.length; i++) {
+    for (const reward of rewards) {
       let token = null;
-      if (rewards[i].asset["fa2"]) {
+      if (reward.asset["fa2"]) {
         token = await getTokensMetadata(
-          rewards[i].asset.fa2.token,
-          rewards[i].asset.fa2.id.toString()
+          reward.asset.fa2.token,
+          reward.asset.fa2.id.toString()
         );
-      } else if (rewards[i].asset["fa12"]) {
-        token = await getTokensMetadata(rewards[i].asset.fa12, 0);
+      } else if (reward.asset["fa12"]) {
+        token = await getTokensMetadata(reward.asset.fa12, 0);
       } else {
         token = {
           decimals: 6,
@@ -58,11 +58,24 @@ export const Explore = () => {
 
       newTokens.push(token);
     }
-    setTokens(newTokens);
+    
+    return newTokens;
   }, [rewards]);
 
+  console.log('rewards', rewards)
+
   useEffect(() => {
-    loadTokensMetadata();
+    let mounted = { value: true };
+    (async () => {
+      const newTokens = await loadTokensMetadata();
+      if (mounted.value) {
+        setTokens(newTokens);
+      }
+    })()
+
+    return () => {
+      mounted.value = false;
+    }
   }, [loadTokensMetadata]);
 
 
@@ -80,6 +93,10 @@ export const Explore = () => {
 
   }, [Tezos.wallet, contract, pkh, rewards]);
 
+  if (loadingRewards) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <section>
       <div className="search-bar"></div>
@@ -88,9 +105,23 @@ export const Explore = () => {
         <h3 className='pad'>Your rewards:</h3>
         <Button disabled={!pkh} onClick={claimAll}>Claim all</Button>
       </div>
-      <Table tokens={tokens} rewards={rewards.filter(x => x.receiver === pkh || x.admin === pkh)} />
+      {
+        !tokens || (tokens.length !== 0 && tokens.length !== rewards.length) ? (
+          <div>Loading tokens...</div>
+        ) : (
+          <Table tokens={tokens} rewards={rewards.filter(x => x.receiver === pkh || x.admin === pkh)} />
+        )
+      }
+
       <h3 className='pad'>All rewards:</h3>
-      <Table tokens={tokens} rewards={rewards.filter(x => x.receiver !== pkh)} />
+      {
+        !tokens || (tokens.length !== 0 && tokens.length !== rewards.length) ? (
+          <div>Loading tokens...</div>
+        ) : (
+          <Table tokens={tokens} rewards={rewards.filter(x => x.receiver !== pkh)} />
+        )
+      }
+
       {pkh && (
         <RefreshableButton callback={() => loadRewards()} />
       )}

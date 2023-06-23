@@ -2,7 +2,7 @@
   "name": "madfish-vesting",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://letier3110.github.io/madfish-vesting",
+  "homepage": "https://digberi.github.io/madfish-vesting",
   "dependencies": {
     "@airgap/beacon-sdk": "^2.3.10",
     "@taquito/beacon-wallet": "^10.1.3",
@@ -24,7 +24,7 @@
     "web-vitals": "^0.2.4"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "react-scripts start --openssl-legacy-provider",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",

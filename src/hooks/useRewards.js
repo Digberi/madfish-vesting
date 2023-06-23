@@ -16,6 +16,7 @@ export const [UseRewardsProvider, useRewards] = constate(() => {
     const limit = storage.vestings_counter;
     const newRewards = await loadFromTzktBigmap(storage.vestings.id.toNumber(), limit);
     const arr = newRewards.map((_, index) => ({ ..._.value, id: index }))
+    console.log('arr', arr);
     setRewards(arr);
     setLoading(false);
   }, [storage]);
