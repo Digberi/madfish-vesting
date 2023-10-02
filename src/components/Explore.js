@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useMemo } from "react";
 import useBeacon from "../hooks/useBeacon";
 import { getTokensMetadata } from "../utils/tokenMetadata.api";
 import { RefreshableButton } from "./RefreshableButton";
@@ -6,6 +6,8 @@ import { useRewards } from "../hooks/useRewards";
 import { Table } from './Table';
 import { Button } from "./Button";
 import BigNumber from "bignumber.js";
+import { prepareTokenRowData } from "../utils/tokenRowHelper";
+
 
 const tenIn18 = new BigNumber(10).pow(18);
 
@@ -29,13 +31,13 @@ const checkIfClaimable = (reward) => {
 export const Explore = () => {
   const { contract, pkh, Tezos } = useBeacon();
   const [tokens, setTokens] = useState([]);
-  const { rewards, loadingRewards, loadRewards } = useRewards();
+  const { rewards, loadingRewards, loadRewards, prices } = useRewards();
 
   const loadTokensMetadata = useCallback(async () => {
     if (rewards.length === 0) {
       return;
     }
-    console.log('loadTokensMetadata');
+
     let newTokens = [];
     for (const reward of rewards) {
       let token = null;
@@ -58,11 +60,8 @@ export const Explore = () => {
 
       newTokens.push(token);
     }
-    
     return newTokens;
   }, [rewards]);
-
-  console.log('rewards', rewards)
 
   useEffect(() => {
     let mounted = { value: true };
@@ -93,6 +92,36 @@ export const Explore = () => {
 
   }, [Tezos.wallet, contract, pkh, rewards]);
 
+
+  const isLoading = !tokens || (tokens.length !== 0 && tokens.length !== rewards.length)
+
+  const yourRewards = rewards.filter(x => x.receiver === pkh || x.admin === pkh);
+
+
+  const usd = useMemo(() => {
+    if (!yourRewards.length ||!prices || isLoading) {
+      return BigNumber(0);
+    }
+
+    return yourRewards.reduce((acc, reward) => {
+      const { fullReward, collected, left } = prepareTokenRowData(tokens, reward.id, reward);
+
+      const pending = left.lt(0) ?
+        BigNumber(0) :
+        left.gt(fullReward.minus(collected))
+          ? fullReward.minus(collected)
+          : left;
+
+      if (pending.isZero()) return acc;
+
+      const price = prices[reward.asset?.fa12 ?? reward.asset.fa2.token] ?? BigNumber(0);
+
+      return acc.plus(pending.times(price))
+    },BigNumber(0))
+  },
+    [isLoading, yourRewards, tokens, prices]
+  );
+
   if (loadingRewards) {
     return <div>Loading...</div>;
   }
@@ -102,20 +131,20 @@ export const Explore = () => {
       <div className="search-bar"></div>
 
       <div className="your-rewards">
-        <h3 className='pad'>Your rewards:</h3>
+        <h3 className='pad'>Your rewards: {usd.toFixed(2)} USD </h3>
         <Button disabled={!pkh} onClick={claimAll}>Claim all</Button>
       </div>
       {
-        !tokens || (tokens.length !== 0 && tokens.length !== rewards.length) ? (
+        isLoading ? (
           <div>Loading tokens...</div>
         ) : (
-          <Table tokens={tokens} rewards={rewards.filter(x => x.receiver === pkh || x.admin === pkh)} />
+          <Table tokens={tokens} rewards={yourRewards} />
         )
       }
 
       <h3 className='pad'>All rewards:</h3>
       {
-        !tokens || (tokens.length !== 0 && tokens.length !== rewards.length) ? (
+        isLoading ? (
           <div>Loading tokens...</div>
         ) : (
           <Table tokens={tokens} rewards={rewards.filter(x => x.receiver !== pkh)} />
