@@ -24,7 +24,7 @@ const DEFAULT_NETWORK = {
   nextNetworkIndex: 1,
   name: "Mainnet",
   type: "main",
-  rpcBaseURL: "https://uoi3x99n7c.tezosrpc.midl.dev",
+  rpcBaseURL: "https://prod.tcinfra.net/rpc/mainnet",
 };
 
 class LambdaViewSigner {
