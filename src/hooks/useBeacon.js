@@ -49,12 +49,14 @@ class LambdaViewSigner {
 const options = {
   name: "Madfish Vesting",
   iconUrl: "https://tezostaquito.io/img/favicon.png",
+  // beacon v4: network is set on the client, not per requestPermissions call
+  network: { type: DEFAULT_NETWORK.id, rpcUrl: DEFAULT_NETWORK.rpcBaseURL },
 };
 
 const michelEncoder = new MichelCodecPacker();
 
 const Tezos = new TezosToolkit(DEFAULT_NETWORK.rpcBaseURL);
-const wallet = new BeaconWallet(options, { forcePermission: true });
+const wallet = new BeaconWallet(options);
 Tezos.setWalletProvider(wallet);
 Tezos.setSignerProvider(new LambdaViewSigner());
 Tezos.setPackerProvider(michelEncoder);
@@ -70,11 +72,10 @@ export const [UseBeaconProvider, useBeacon] = constate(() => {
   const [storage, setStorage] = useState(null);
 
   const connect = useCallback(async () => {
-    await wallet.disconnect();
+    // beacon v4: disconnect() destroys the client (seed included) — clearing
+    // the active account is enough to force a fresh pairing dialog
     await wallet.clearActiveAccount();
-    await wallet.requestPermissions({
-      network: { type: DEFAULT_NETWORK.id },
-    });
+    await wallet.requestPermissions();
     Tezos.setWalletProvider(wallet);
     Tezos.setRpcProvider(DEFAULT_NETWORK.rpcBaseURL);
     const activeAcc = await wallet.client.getActiveAccount();
@@ -85,7 +86,6 @@ export const [UseBeaconProvider, useBeacon] = constate(() => {
   }, []);
 
   const disconnect = useCallback(async () => {
-    await wallet.disconnect();
     await wallet.clearActiveAccount();
     Tezos.setWalletProvider(wallet);
     setUserPkh('');
